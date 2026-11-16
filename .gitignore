@@ -1,0 +1,16 @@
+# Local configuration and credentials
+/.env
+/secrets/*
+!/secrets/.gitkeep
+
+# Dependencies
+/frontend/node_modules/
+/workflow/vendor/
+
+# Build output and caches
+/frontend/dist/
+/frontend/.angular/
+/workflow/var/
+/workflow/.phpunit.cache/
+
+.DS_Store

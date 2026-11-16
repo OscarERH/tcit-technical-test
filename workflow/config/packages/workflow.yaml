@@ -1,0 +1,27 @@
+# Lifecycle of a post. This service is the single owner of these rules: the Go
+# API asks it before changing a post's status and the UI renders its actions
+# from this definition.
+framework:
+    workflows:
+        post_publishing:
+            type: state_machine
+            marking_store:
+                type: method
+                property: status
+            supports:
+                - App\Model\PostState
+            initial_marking: draft
+            places:
+                - draft
+                - published
+                - archived
+            transitions:
+                publish:
+                    from: draft
+                    to: published
+                archive:
+                    from: published
+                    to: archived
+                restore:
+                    from: archived
+                    to: draft

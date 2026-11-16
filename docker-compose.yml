@@ -1,0 +1,51 @@
+services:
+  # Cloud Spanner emulator. It keeps data in memory only: every restart of this
+  # container starts from an empty database, which the API recreates on boot.
+  spanner:
+    image: gcr.io/cloud-spanner-emulator/emulator:latest
+
+  # Symfony Workflow service: owns the post lifecycle (draft/published/archived).
+  workflow:
+    build: ./workflow
+
+  # Go API.
+  api:
+    build: ./backend
+    environment:
+      PORT: 8080
+      SPANNER_EMULATOR_HOST: spanner:9010
+      SPANNER_PROJECT: tcit-local
+      SPANNER_INSTANCE: posts-instance
+      SPANNER_DATABASE: posts-db
+      SPANNER_AUTO_SETUP: 'true'
+      WORKFLOW_URL: http://workflow:8000
+      # Optional integrations, enabled from .env (see .env.example).
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      DRIVE_FOLDER_ID: ${DRIVE_FOLDER_ID:-}
+      DRIVE_CREDENTIALS_FILE: ${DRIVE_CREDENTIALS_FILE:-}
+    volumes:
+      # Drop a service-account key at ./secrets/drive-service-account.json to
+      # enable attachments; the folder is git-ignored.
+      - ./secrets:/secrets:ro
+    ports:
+      - '${API_PORT:-8080}:8080'
+    depends_on:
+      - spanner
+      - workflow
+    # The emulator loses its data if it restarts; restarting the API with it
+    # recreates the schema.
+    restart: on-failure
+
+  # Go toolchain used by `make test-backend`; never started by `up`.
+  backend-tests:
+    image: golang:1.26-alpine
+    profiles: [test]
+
+  # Angular app served by nginx, which also proxies /api to the Go API.
+  web:
+    build: ./frontend
+    ports:
+      - '${WEB_PORT:-4200}:80'
+    depends_on:
+      - api

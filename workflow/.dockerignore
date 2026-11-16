@@ -1,0 +1,9 @@
+vendor
+var
+.env.local
+.env.*.local
+Dockerfile
+.dockerignore
+tests
+phpunit.dist.xml
+.phpunit.cache
